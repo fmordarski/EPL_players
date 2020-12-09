@@ -1,0 +1,223 @@
+---
+title: "Raport dotyczący statystyk piłkarzy ligi angielskiej"
+author: "Filip Mordarski"
+date: "2 12 2020"
+header-includes:
+  - \usepackage[polish]{babel}
+output: 
+  pdf_document:
+toc: true
+toc_depth: 2
+number_sections: true
+---
+
+```{r, include=FALSE, echo=FALSE, warning=FALSE}
+rm(list=ls())
+library(dplyr)
+library(ggplot2)
+library(lattice)
+library(latticeExtra)
+library(viridis)
+library(tidyverse)
+library(gridExtra)
+library(fmsb)
+
+setwd("C:/Users/Uzytkownik/Documents/Studia/prezentacja i wizualizacja/projekt/")
+
+data1 <- read.csv("pl_19-20.csv", encoding = "UTF-8", stringsAsFactors = FALSE,
+                  strip.white=TRUE)
+data1$Name <- substr(data1$Name, 1, length(data1$Name)-1)
+data <- data1%>%filter(Appearances!=0)
+```
+# Wstęp
+
+Celem niniejszego raportu jest analiza statystyk zawódników, występujących w najwyższej klasie męskich rozgrywek piłkarskich w Anglii w sezonie 2019/2020. Może on okazać się bardzo wartościowy dla trenerów, którym pomoże w poprawianiu jakości gry swojego zespołu. Taki raport z pewnością okaże się korzystny podczas budowania kadry pierwszego zespołu na kolejny sezon. Umożliwi wyszukanie zawodników o charakterystyce pasującej do gry danego zespołu.
+
+# Opis zbioru danych
+
+Poniższy rozdział będzie poświęcony opisowi zbioru danych oraz jego statystykom opisowym. Zbiór danych, wykorzystany do przeprowadzenia analizy pochodzi z następującej strony internetowej: https://www.kaggle.com/krishanthbarkav/english-premier-leagueepl-player-statistics. Został on utworzony na podstawie statystyk zawodników, występujących w najwyższej klasie męskich rozgrywek piłkarskich w Anglii w sezonie 2019/2020 . Zbiór danych zawiera 974 obserwacji oraz 54 zmienne. Jedna obserwacja, odpowiada jednemu zawodnikowi oraz jego statystykom z całego sezonu 2019/2020. Analiza będzie obejmować tylko zawodników, którzy wystąpili przynajmniej raz podczas całego sezonu. Z tego powodu analizowany zbiór danych liczy 474 obserwacji.
+
+Zbiór danych zawiera bardzo dużo zmiennych, aż 54. Przedstawianie statystyk opisowych każdej z nich jest zbędne i nie byłoby wartościowe. Z tego względu zostaną przedstawione jedynie statystyki tych zmiennych, które będą wykorzystane w dalszej analizie.
+
+# Wstępna analiza statystyk zawodników
+
+Poniższy rozdział będzie zawierał analizę ogólnych statystyk zawodników z wszystkich pozycji na boisku. W pierwszej kolejności został przedstawiony histogram pozycji zawodników.
+
+```{r ,echo = FALSE, warning=FALSE}
+ggplot(aes(Position), data=data)+
+  geom_histogram(fill=viridis(10)[3], stat='count')+
+  labs(title='Histogram pozycji zawodników', x='Pozycja', y='Liczba piłkarzy')+
+  theme_bw()
+```
+
+Jak widać na powyższym wykresie, najczęstszą pozycją zawodników jest pomocnik. Porównywalną ilość stanowią obrońcy. Najmniej w lidze angielskiej jest bramkarzy. Jest to dosyć naturalne, ponieważ w meczu w jednej drużynie gra tylko jeden bramkarz. Relatywnie mało jest również napastników. Drużyny często grają w systemie z jednym lub dwoma napastnikami, dlatego ta pozycja nie jest tak mocna obsadzona jak obrona czy pomoc. Następnie został utworzony histogram występów zawodników w podziale na pozycje.
+
+```{r ,echo = FALSE}
+histogram(~Appearances|Position, data=data, col=viridis(10)[4], breaks = 10, 
+          xlab = 'Liczba występów', main='Histogram występów zawodników')
+```
+
+Na podstawie powyższego wykresu można zauważyć, że aż 30 % bramkarzy wystąpiło w 35 - 40 meczach. Jest to największy procent wśród pozycji zawodników. Na podstawie tego można wysnuć wniosek, że drużyny rzadziej decydują się zmieniać bramkarzy w podstawowym składzie niż zawodników z innych pozycji. Na innych pozycjach wartości dla danych zakresów występów są podobne. Ciekawy przypadek występuje wśród napastników, którzy zagrali 30 - 35 meczy. Jest ich prawie 20 % wśród innych zawodników na tej pozycji. Również ta wartość może sugerować, że trenerzy raczej nie są skorzy do zmiany podstawowych napastników w ciągu całego sezonu. Prawdopodobnie najważniejszą statystyką wśród piłkarzy są zdobyte przez nich bramki. To one decydują o ostatecznym wyniku. Przeanalizowano więc zależność pomiędzy zdobytymi bramkami a oddanymi strzałami w zależności od pozycji zawodnika. W tej analizie nie zostaną uwzględnieni bramkarze, ponieważ żaden z nich nie zdobył w tym sezonie bramki.
+
+```{r, echo=FALSE}
+xyplot(Goals ~ Shots | Position, data=data%>%filter(Position!='Goalkeeper'),
+       layout=c(3, 1), aspect=2, xlab = 'Strzały', ylab = 'Gole', main='Zależność goli od strzałów w podziale na pozycje wraz z linią regresji',
+       panel=function(x, y) {
+	     panel.lmline(x, y)
+       panel.xyplot(x, y, col=viridis(10)[4], pch=19)
+       })
+```
+
+Powyższy wykres dostarcza wniosków, które dla nawet poczatkującego fana piłki nożnej wydadzą się dość naturalne i oczywiste. W pierwszej kolejności, wystepuje pozytywna korelacja pomiędzy ilością bramek a strzałami. Na wykresie można zauważyć, że najwięcej bramek zdobywali napastnicy. Co ciekawe, nachylenie linii regresji jest wyższa niż u pomocników, co sugeruje że wraz ze zwiększeniem liczby strzałów o jeden, ilość bramek wzrasta szybciej u napastników niż u pomocników. Jak można się było również spodziewać, ilość bramek zdobytych przez obrońców jest znikoma. 
+
+# Bramkarze
+
+Powszechnie wiadomo, że bramkarze są odpowiedzialni za bronienie dostępu do własnej bramki. Z tego względu, nie ma wielu statystyk dotyczącego tego aspektu gry. Poniższy rozdział będzie zawierał analizę takich elementów jak, ilość czystych kont, liczba straconych bramek, błędy prowadzące do utraty bramki, czy liczba obronionych strzałów wśród bramkarzy. Zostanie również poruszona kwestia gry nogami bramkarzy oraz ich skuteczności. Jest to aspekt, na który coraz częściej zwracają uwagę trenerzy w obecnych czasach. 
+
+## Analiza skuteczności bronienia własnej bramki
+
+W tym podrozdziale zostanie przedstawiona analiza skuteczności bramkarzy w bronieniu dostępu do własnej bramki. Początkowo, został wygenerowany wykres przedstawiający histogram czystych kont zawodników (sytuacja gry bramkarz nie straci ani jednej bramki w meczu), czyli najważniejszej statystyki defensywnej jeśli chodzi o bramkarzy.
+
+```{r, include=FALSE, echo=FALSE}
+goalkeepers <- data%>%filter(Position=='Goalkeeper')
+goalkeepers <- goalkeepers[,colSums(is.na(goalkeepers))<nrow(goalkeepers)]
+```
+
+```{r ,echo = FALSE}
+histogram(~Clean.sheets, data=goalkeepers, col=viridis(10)[4], breaks = 5, ylab = 'Liczba piłkarzy',
+          xlab = 'Liczba czystych kont', main='Histogram czystych kont bramkarzy', type = 'count')
+```
+
+Na powyższym wykresie można zauważyć, że najliczniejsza liczba bramkarzy zachowała czyste konto maksymalnie pięć razy w ciągu sezonu. Może to być skutkiem tego, że jest nieznaczna liczba bramkarzy, którzy stosunkowo rzadko występowali na boisku. Widzimy również, że dosłownie kilku bramkarzy zachowało czyste konto od 10 do 20 razy. Prawdopodobnie, są to zawodnicy najlepszych drużyn w lidze, które stosunkowo rzadko przegrywają, co wiąże się z małą liczbą traconych przez nich bramek. Kolejno, zostanie przeanalizowana zależność pomiędzy liczbą straconych bramek, a obronionymi strzałami.
+
+```{r, echo=FALSE}
+ggplot(goalkeepers) +
+  geom_point(aes(Saves, Goals.conceded), colour=viridis(10)[3]) +
+  geom_smooth(aes(Saves, Goals.conceded),method = "lm", se = FALSE, colour=viridis(10)[2]) +
+  theme_bw() +
+  labs(title = "Stracone bramki a obronione strzały", x='Obronione strzały', y='Stracone bramki')
+
+```
+Powyższy wykres dostarcza ciekawych wniosków. Naturalnie moglibyśmy pomyśleć, że im większa liczba strzałów, tym mniej straconych bramek przez bramkarza. Nie jest to jednak prawdą, ponieważ może to oznaczać że na bramkę zawodnika pada zdecydowanie więcej strzałów, z którymi musi on sobie radzić, co powoduje większe prawdopodobieństwo utraty bramki. Inną ważną kwestią do zanotowania jest fakt, że bramkarze którzy obronili małą liczbę strzałów, prawdopodobnie wystąpili w mniejszej ilości spotkań. To powoduje, że liczba utraconych przez nich bramek może być niższa. Z tego powodu została preprowadzona analiza liczby straconych bramek na mecz oraz obronionych strzałów na mecz w podziale na liczbę czystych kont. W tym celu zostanie utworzona nowa zmienna kategoryzująca bazująca na statystyce czystych kont.
+
+```{r, echo=FALSE}
+goalkeepers <- goalkeepers %>% mutate(Goals_conceded_per_match = Goals.conceded/Appearances,
+                       Clean_sheets_category=ifelse(Clean.sheets>=5, ifelse(Clean.sheets>11, 'Więcej niż 11', 'Od 5 do 11'), 'Mniej niż 5'),
+                       Saves_per_match=Saves/Appearances)
+
+xyplot(Goals_conceded_per_match ~ Saves_per_match | Clean_sheets_category, data=goalkeepers,
+       layout=c(3, 1), aspect=2, xlab = 'Obronione strzały na mecz', ylab = 'Stracone gole na mecz', 
+       main='Zależność straconych goli od obronionych strzałów w podziale ilość czystych kont',
+       panel=function(x, y) {
+	     panel.lmline(x, y)
+       panel.xyplot(x, y, col=viridis(10)[4], pch=19)
+       })
+
+```
+
+Powyższe wykresy dostarczają bardzo ciekawych wniosków. Mianowicie, bramkarze którzy zachowali czyste konto więcej niż 11 razy wcale nie musieli radzić sobie ze znacznie mniejszą ilością strzałów na mecz. W ich kategorii, widać pozytywną korelację pomiędzy liczbą strzałów na mecz a liczbą straconych goli na mecz. Podobna sytuacja występuje u bramkarzy, którzy zachowali czyste konto mniej niż 5 razy. W tej kategorii, zawodnicy cieszyli się największa niechlubną statystyką liczby straconych bramek na mecz. Dwóch bramkarzy traciło średnio aż 3 bramki na mecz. W kategorii pośredniej, gdzie bramkarzy zachowywali od 5 do 11 czystych kont w ciągu sezonu nie widać korelacji pomiędzy liczbą obronionych strzałów na mecz, a straconymi bramkami na mecz. W ostatniej części tego podrozdziału zostanie wygenerowany wykres, przedstawiający bramkarzy z największym procentem obronionych strzałów. Do analizy zostali włączeni jedynie bramkarze, którzy wystąpili w przynajmniej 10 meczach.
+
+```{r, echo=FALSE}
+temp <- goalkeepers%>%
+        filter(Appearances>10)%>%
+        mutate(Accuracy = Saves/(Saves+Goals.conceded))%>%
+        top_n(8, Accuracy)
+
+ggplot(temp)+
+  geom_text(aes(Saves_per_match, Accuracy, label=Name, colour=Clean_sheets_category), size=6) +
+  theme_bw() +
+  labs(title = "Bramkarze z najwiekszym procentem obronionych strzałów", x='Obronione strzały na mecz', y='Skuteczność obrony strzałów') +
+  scale_color_viridis(name='Czyste konta', discrete=TRUE, begin=0.3, end=0.8) +
+  scale_x_continuous(limits = c(1.5, 4.5)) 
+
+```
+
+Jak widać na powyższym wykresie, zawodnikiem który znacznie wyróżniał się od swoich konkurentów w tym aspekcie gry był Hugo Lloris. Mógł się on pochwalić największą skutecznością obrony strzałów, przy największej ilości oddanych strzałów na jego bramkę wśród analizowanych zawodników. Co ciekawe, zachował on jedynie od 5 do 11 czystch kont w ciągu sezonu. Więcej czystych kont zachowali tacy bramkarze jak David de Gea, Alisson, Ederson czy Nick Pope.
+
+## Gra nogami bramkarzy
+
+Tak jak już zostało wspomniane na wstępie do tego rozdziału, element gry nogami wśród bramkarzy staje się coraz istotniejszy we współczesnym futbolu. Poniższy podrozdział ma na celu przybliżenie tego aspektu gry wśród bramkarzy ligi angielskiej. W pierwszej kolejności został przedstawiony wykres, ukazujący zależnośc pomiędzy liczbą podań bramkarza a ilością błędów prowadzących do straty bramki oraz asyst.
+
+```{r, echo=FALSE, warning=FALSE}
+
+ggplot(goalkeepers)+
+  geom_point(aes(x=as.numeric(Passes), y=Errors.leading.to.goal, colour=factor(Assists)), size=8) +
+  geom_smooth(aes(as.numeric(Passes), Errors.leading.to.goal),method = "lm", se = FALSE, colour=viridis(10)[2]) +
+  scale_color_viridis(name='Liczba asyst', discrete=TRUE, begin=0.3, end=0.8) +
+  labs(x='Liczba podań', y='Błędy prowadzace do straty bramki', title='Liczba podań a błędy prowadzące do straty bramki') +
+  theme_bw()
+```
+
+Na podstawie powyższego wykresu możemy zauważyć, że wraz ze wzrostem liczby podań bramkarza wzrastała liczba błędów, prowadzących do straty bramki. Wydaje się to dosyć naturalne, bramkarzom którzy podejmują większe ryzyko i biorą udział w rozgrywaniu piłki, mogą przydarzyć się błędy, prowadzące do utraty bramki. Na wykresie możemy zauważyć, że tylko dwóch bramkarzy zanotowało asystę w ciągu sezonu. Byli to bramkarze, którzy wykonali dość dużą liczbę podań. Widzimy również, że był bramkarz, który wykonał prawie 1000 podań w ciągu sezonu i nie popełnił ani jednego błędu prowadzącego do utraty bramki. Na drugim końcu znajduje się bramkarz, który również wykonał prawie 1000 podań, ale przytrafiło mu się aż pięć takich błędów. Niektórzy trenerzy wymagają od swojej drużyny szybkiego przerzucania ciężaru gry na połowę przeciwnika. Do tak obranej taktyki, może przydać się bramkarz, który potrafi celnie wykonać długie podanie. W tym celu został sporządzony poniższy wykres, który przedstawia liczbę długich podań na mecz w podziale na zawodników. Do analizy zostali włączeni bramkarze, którzy rozegrali przynajmniej 10 meczów.
+
+```{r, echo=FALSE, warning=FALSE}
+
+temp <- goalkeepers%>%
+        filter(Appearances>10)%>%
+        mutate(balls.per.match = Accurate.long.balls/Appearances)
+
+ggplot(temp)+
+  geom_col(aes(reorder(Name, balls.per.match), balls.per.match), fill=viridis(10)[5])+
+  theme_minimal()+
+  labs(x='Bramkarz', y='Liczba dokładnych długich podań na mecz', title='Liczba dokładnych długich podań na mecz wśród bramkarzy')+
+  theme(axis.text.x = element_text(angle=45), axis.line.x = element_blank())
+```
+
+Widzimy na powyższym wykresie że trzech bramkarzy ma ponad 8 celnych długich podań na mecz. Możemy się spodziewać, że są to bramkarze drużyn, które lubią grać z kontrataku i szybko przenosić piłkę na połowę rywali. Czterech bramkarzy z najniższą liczbą długich podań na mecz, fani piłki nożnej mogą kojarzyć z drużyn grających krótkimi podaniami i wyprowadzającymi piłkę spod własnej bramki. Na koniec analizy bramkarzy zostaną przedstawione cztery wykresy radarowe dla wybranych bramkarzy.
+```{r, echo=FALSE, fig.width=6.5, fig.height=6, out.width='600px'}
+
+temp <- goalkeepers %>%
+  filter(Appearances>=10) %>%
+  mutate(balls.per.match = Accurate.long.balls/Appearances,
+         throw_per_match = Throw.outs/Appearances,
+         high_claim_per_match = High.Claims/Appearances)
+
+normalize <- function(x) {
+  return((x - min(x)) / (max(x) - min(x)))
+}
+
+temp['Goals_conceded_per_match'] <- normalize(temp['Goals_conceded_per_match'])
+temp['balls.per.match'] <- normalize(temp['balls.per.match'])
+temp['Saves_per_match'] <- normalize(temp['Saves_per_match'])
+temp['Passes.per.match'] <- normalize(temp['Passes.per.match'])
+temp['Clean.sheets'] <- normalize(temp['Clean.sheets'])
+temp['high_claim_per_match'] <- normalize(temp['high_claim_per_match'])
+
+create_data_keepers <- function(x){
+temp2 <- temp%>%
+  filter(Name%in%x) %>%
+  select(Saves_per_match, Goals_conceded_per_match, balls.per.match, Passes.per.match, 
+         Clean.sheets, high_claim_per_match,Name)
+rownames(temp2) <- temp2$Name 
+temp2 <- temp2[, -7]
+temp2 <- rbind(rep(1, 6), rep(0,6), temp2)
+colnames(temp2) <- c("Obronione strzały na mecz", "Stracone bramki na mecz", "Celne długie podania na mecz", "Podania na mecz",
+                               "Czyste konta", "Wysokie piłki na mecz")
+return(temp2)
+
+}
+
+alisson_ederson <- create_data_keepers(c("Alisson", "Ederson", "David de Gea"))
+scale_colours=c(viridis(3)[3], viridis(3)[2], magma(3)[2])
+radarchart(alisson_ederson, pcol=scale_colours, plwd=3, vlcex=0.7)
+legend(x=1, 
+       y=1.35, 
+       legend = rownames(alisson_ederson[-c(1,2),]), 
+       bty = "n", pch=20 , col = scale_colours, cex = 0.7)
+```
+Wykresy radarowe są bardzo użyteczną formą wizualizacji statysty zawodników i porównywanie ich. Powyższe wykresy dostarczają bardzo wartościowych informacji na temat konkretnych zawodników i ich skuteczności w grze. W pierwszej kolejności wszystkie powyżej przedstawione statystyki zostały znormalizowane przy wykorzystaniu nastepującej funkcji: y(x) = (x - min(**X**)) / (max(**X**) - min(**X**)), gdzie x należy do wektora **X**. Na podstawie pierwszego wykresu, możemy zauważyć że Ederson był najlepszym bramkarzem pod względem liczby czystych kont w porównaniu do dwóch innych bramkarzy, Alissona oraz Davida de Gei. Natomiast jeśli chodzi o liczbę podań na mecz, najlepszy w tej kategorii w tej trójce był Alisson. David de Gea przewodzi w kategorii obronionych strzałów na mecz. 
+
+```{r, echo=FALSE, fig.width=6.5, fig.height=6, out.width='600px'}
+fabian <- create_data_keepers(c("Lukasz Fabianski", "Hugo Lloris", "Ben Foster"))
+radarchart(fabian, pcol=scale_colours, plwd=3, vlcex = 0.7)
+legend(x=1, 
+       y=1.35, 
+       legend = rownames(fabian[-c(1,2),]), 
+       bty = "n", pch=20 , col = scale_colours, cex=0.7)
+```
+
+Jeśli chodzi o drugi wykres, widać zdecydowaną przewagę Hugo Llorisa w kategorii liczby obronionych strzałów na mecz nad dwójką innych bramkarzy, Łukasza Fabiańskiego oraz Bena Fostera. Przewodzi on również pod względem liczby straconych bramek na mecz, ponieważ w tej statystyce im mniejsza liczba tym pozytywniej świadczy to o bramkarzu.
+
+# Analiza statystyk obrońców
+
+W tym rozdziale zostanie przeprowadzona analiza statystyk piłkarzy, występujących na pozycji obrońcy. Najważniejszą rolą obrońcy jest uniemożliwienie stworzenia dogodnej sytuacji do zdobycia bramki przez przeciwników. Dlatego, ten rozdział w głównej mierze będzie poświęcony analizie statystyk, mówiących o skuteczności bronienia dostępu do własnej bramki, czy agresywności. W obecnych czasach, w których coraz częsciej jest promowany ofensywny futbol, nawet obrońcy są odpowiedzialni za tworzenie okazji do zdobycia bramki. Z tego powodu, zostanie przeprowadzona również krótka analiza skuteczności obrońców pod bramką rywala.
