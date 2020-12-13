@@ -21,14 +21,19 @@ library(viridis)
 library(tidyverse)
 library(gridExtra)
 library(fmsb)
-
-# setwd("C:/Users/Uzytkownik/Documents/Studia/prezentacja i wizualizacja/projekt/")
-setwd("C:/Users/filip-mordarski/priv/EPL_players")
+knitr::opts_chunk$set(fig.align = "center", out.width='350px', warning = F) 
+setwd("C:/Users/Uzytkownik/Documents/Studia/prezentacja i wizualizacja/projekt/EPL_players")
+# setwd("C:/Users/filip-mordarski/priv/EPL_players")
 
 data1 <- read.csv("pl_19-20.csv", encoding = "UTF-8", stringsAsFactors = FALSE,
                   strip.white=TRUE)
 data1$Name <- substr(data1$Name, 1, length(data1$Name)-1)
 data <- data1%>%filter(Appearances!=0)
+data[data$Position=='Goalkeeper', 'Position'] <- 'Bramkarz'
+data[data$Position=='Defender', 'Position'] <- 'Obrońca'
+data[data$Position=='Midfielder', 'Position'] <- 'Pomocnik'
+data[data$Position=='Forward', 'Position'] <- 'Napastnik'
+data$Passes <- as.numeric(sub(",", "", data$Passes, fixed = TRUE))
 ```
 # Wstęp
 
@@ -55,13 +60,13 @@ Jak widać na powyższym wykresie, najczęstszą pozycją zawodników jest pomoc
 
 ```{r ,echo = FALSE}
 histogram(~Appearances|Position, data=data, col=viridis(10)[4], breaks = 10, 
-          xlab = 'Liczba występów', main='Histogram występów zawodników')
+          xlab = 'Liczba występów', main='Histogram występów zawodników', ylab = 'Procent w danej grupie')
 ```
 
 Na podstawie powyższego wykresu można zauważyć, że aż 30 % bramkarzy wystąpiło w 35 - 40 meczach. Jest to największy procent wśród pozycji zawodników. Na podstawie tego można wysnuć wniosek, że drużyny rzadziej decydują się zmieniać bramkarzy w podstawowym składzie niż zawodników z innych pozycji. Na innych pozycjach wartości dla danych zakresów występów są podobne. Ciekawy przypadek występuje wśród napastników, którzy zagrali 30 - 35 meczy. Jest ich prawie 20 % wśród innych zawodników na tej pozycji. Również ta wartość może sugerować, że trenerzy raczej nie są skorzy do zmiany podstawowych napastników w ciągu całego sezonu. Prawdopodobnie najważniejszą statystyką wśród piłkarzy są zdobyte przez nich bramki. To one decydują o ostatecznym wyniku. Przeanalizowano więc zależność pomiędzy zdobytymi bramkami a oddanymi strzałami w zależności od pozycji zawodnika. W tej analizie nie zostaną uwzględnieni bramkarze, ponieważ żaden z nich nie zdobył w tym sezonie bramki.
 
 ```{r, echo=FALSE}
-xyplot(Goals ~ Shots | Position, data=data%>%filter(Position!='Goalkeeper'),
+xyplot(Goals ~ Shots | Position, data=data%>%filter(Position!='Bramkarz'),
        layout=c(3, 1), aspect=2, xlab = 'Strzały', ylab = 'Gole', main='Zależność goli od strzałów w podziale na pozycje wraz z linią regresji',
        panel=function(x, y) {
 	     panel.lmline(x, y)
@@ -80,7 +85,7 @@ Powszechnie wiadomo, że bramkarze są odpowiedzialni za bronienie dostępu do w
 W tym podrozdziale zostanie przedstawiona analiza skuteczności bramkarzy w bronieniu dostępu do własnej bramki. Początkowo, został wygenerowany wykres przedstawiający histogram czystych kont zawodników (sytuacja gry bramkarz nie straci ani jednej bramki w meczu), czyli najważniejszej statystyki defensywnej jeśli chodzi o bramkarzy.
 
 ```{r, include=FALSE, echo=FALSE}
-goalkeepers <- data%>%filter(Position=='Goalkeeper')
+goalkeepers <- data%>%filter(Position=='Bramkarz')
 goalkeepers <- goalkeepers[,colSums(is.na(goalkeepers))<nrow(goalkeepers)]
 ```
 
@@ -108,7 +113,8 @@ goalkeepers <- goalkeepers %>% mutate(Goals_conceded_per_match = Goals.conceded/
 
 xyplot(Goals_conceded_per_match ~ Saves_per_match | Clean_sheets_category, data=goalkeepers,
        layout=c(3, 1), aspect=2, xlab = 'Obronione strzały na mecz', ylab = 'Stracone gole na mecz', 
-       main='Zależność straconych goli od obronionych strzałów w podziale ilość czystych kont',
+       main=list(label='Zależność straconych goli od obronionych strzałów w podziale na ilość czystych kont',
+                 cex=0.9),
        panel=function(x, y) {
 	     panel.lmline(x, y)
        panel.xyplot(x, y, col=viridis(10)[4], pch=19)
@@ -129,7 +135,7 @@ ggplot(temp)+
   theme_bw() +
   labs(title = "Bramkarze z najwiekszym procentem obronionych strzałów", x='Obronione strzały na mecz', y='Skuteczność obrony strzałów') +
   scale_color_viridis(name='Czyste konta', discrete=TRUE, begin=0.3, end=0.8) +
-  scale_x_continuous(limits = c(1.5, 4.5)) 
+  scale_x_continuous(limits = c(1.5, 4.5))
 
 ```
 
@@ -161,7 +167,7 @@ ggplot(temp)+
   geom_col(aes(reorder(Name, balls.per.match), balls.per.match), fill=viridis(10)[5])+
   theme_minimal()+
   labs(x='Bramkarz', y='Liczba dokładnych długich podań na mecz', title='Liczba dokładnych długich podań na mecz wśród bramkarzy')+
-  theme(axis.text.x = element_text(angle=45), axis.line.x = element_blank())
+  theme(axis.text.x = element_text(hjust=1, angle=45), axis.line.x = element_blank())
 ```
 
 Widzimy na powyższym wykresie że trzech bramkarzy ma ponad 8 celnych długich podań na mecz. Możemy się spodziewać, że są to bramkarze drużyn, które lubią grać z kontrataku i szybko przenosić piłkę na połowę rywali. Czterech bramkarzy z najniższą liczbą długich podań na mecz, fani piłki nożnej mogą kojarzyć z drużyn grających krótkimi podaniami i wyprowadzającymi piłkę spod własnej bramki. Na koniec analizy bramkarzy zostaną przedstawione cztery wykresy radarowe dla wybranych bramkarzy.
@@ -228,7 +234,7 @@ W tym rozdziale zostanie przeprowadzona analiza statystyk piłkarzy, występują
 Poniższy podrozdział będzie zawierał analizę defensywnych statystyk obrońcóW, takich jak liczba czystych kont, liczba pojedynków oraz ich skuteczność, czy liczba przechwytóW. W bazie znajduje się 161 obrońców. Poniżej zaprezentowano histogram procentu liczby czystych kont w sezonie wśród obrońców.
 
 ```{r, include=F, echo=F}
-defenders <- data%>%filter(Position=='Defender')
+defenders <- data%>%filter(Position=='Obrońca')
 defenders <- defenders[,colSums(is.na(defenders))<nrow(defenders)]
 ```
 ```{r, echo=F}
@@ -242,12 +248,13 @@ ggplot(defenders, aes(Clean.sheets/Appearances))+
        x="Procent czystych kont na mecz",
        y="Ilość zawodników") +
   scale_x_continuous(breaks=c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6),
-                     labels=c("0%", "10%", "20%", "30%", "40%", "50%", "60%"))
+                     labels=c("0%", "10%", "20%", "30%", "40%", "50%", "60%"))+
+  scale_y_continuous(limits=c(0, 70))
 ```
 
 Powyższy wykres dostarcza informacji, że wartość odsetka czystych kont na mecz w sezonie najczęściej wynosiła z przedziału 10% - 20%. Aż 55 zawodników zaliczało się do tego przedziału. Tylko jeden zawodnik co drugi mecz ukończył z czystym kontem. Następnie została zwizualizowana zależność pomiędzy liczbą pojedynków na mecz a liczbą straconych bramek na mecz w podziale na odsetek czystych kont na mecz. Poniższa analiza uwzględnia obrońców, którzy rozegrali przynajmniej 10 spotkań w ciągu sezonu.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, out.width="450px"}
 ggplot(defenders%>%filter(Appearances>=10))+
   geom_point(aes(x=Tackles/Appearances, y=Goals.conceded/Appearances, 
                  colour=Clean.sheets/Appearances), size=4)+
@@ -255,12 +262,13 @@ ggplot(defenders%>%filter(Appearances>=10))+
   geom_smooth(aes(x=Tackles/Appearances, y=Goals.conceded/Appearances),
               method = "lm", se = FALSE)+
   theme_minimal()+
-  labs(title="Liczba wślizgów na mecz a liczba straconych bramek na mecz w podziale na odsetek czystych kont na mecz", x="Liczba wślizgów na mecz", y="Liczba straconych bramek na mecz")
+  labs(title="Liczba wślizgów na mecz a liczba straconych bramek na mecz \nw podziale na odsetek czystych kont na mecz", x="Liczba wślizgów na mecz", y="Liczba straconych bramek na mecz")+
+  theme(legend.position="bottom") 
 ```
 
 Na podstawie powyższego wykresu, można wysnuć wniosek że nie ma zależności pomiędzy liczbą wślizgów na mecz a liczbą straconych bramek na mecz. Widać natomiast pewną ujemną zależność pomiędzy liczbą straconych bramek na mecz a odsetkiem czystych kont na mecz, co wydaje się być oczywistą zależnością. Niżej osadzone punkty mają raczej ciemniejszą barwę niż te powyżej, so sugeruje że wraz z mniejszą liczbą straconych bramek na mecz odsetek czystych kont na mecz wzrasta. Następnie przeanalizowano wpływ odsetka wygranych pojedynków na liczbę zablokowanych strzałów na mecz. 
 
-```{r, echo=F}
+```{r, echo=F, out.width="500px"}
 defenders$clean_sheets <- ifelse(defenders$Clean.sheets<3, "Mniej niż 3 czyste konta", 
                                  ifelse(defenders$Clean.sheets<6, "Między 3 a 6 czystych kont",
                                         ifelse(defenders$Clean.sheets<10, "Między 6 a 10 czystych kont",
@@ -275,9 +283,121 @@ ggplot(defenders%>%filter(Appearances>=5 & !is.na(Clean.sheets)),
   geom_smooth(aes(x=Duel.accuracy, y=Blocked.shots/Appearances),
               method = "lm", se=FALSE)+
   theme_minimal()+
-  labs(title="Zablokowone strzałe na mecz a skuteczność pojedynków oraz liczbę straconych bramek w podziale na liczbę czystych kont", y="Zablokowane strzały na mecz", 
-       x="Odsetek wygranych pojedynków")
+  labs(title="Zablokowone strzałe na mecz a skuteczność pojedynków oraz liczbę \nstraconych bramek w podziale na liczbę czystych kont", y="Zablokowane strzały na mecz", 
+       x="Odsetek wygranych pojedynków")+
+  theme(legend.position="bottom")
 ```
 
-Powyższy wykres dostarcza wiele różnych wniosków na temat gry obronnej zawodników. W pierwszej kolejności, w trzech z czterech kategorii widać ujemną zależność pomiędzy skutecznością pojedynków a liczbą zablokowanych strzałów na mecz. Natomiast obrońcy, którzy zachowali czyste konta mniej niż 3 razy wyłamują się z tego schematu. W ich przypadku tej zależności nie widać. Nie widać zależności pomiędzy liczbą straconych bramek na mecz a liczbą zablokowanych strzałów na mecz. Tak samo jak pomiędzy liczbą straconych bramek a skutecznością pojedynków.
+Powyższy wykres dostarcza wiele różnych wniosków na temat gry obronnej zawodników. W pierwszej kolejności, w trzech z czterech kategorii widać ujemną zależność pomiędzy skutecznością pojedynków a liczbą zablokowanych strzałów na mecz. Natomiast obrońcy, którzy zachowali czyste konta mniej niż 3 razy wyłamują się z tego schematu. W ich przypadku tej zależności nie widać. Nie widać zależności pomiędzy liczbą straconych bramek na mecz a liczbą zablokowanych strzałów na mecz. Tak samo jak pomiędzy liczbą straconych bramek a skutecznością pojedynków. Następnie została utworzona nowa zmienna, określająca ilość udanych akcji defensywnych na mecz (podzielona suma wślizgów, zablokowanych strzałów, przechwytów i wybić piłki przez liczbę rozegranych meczów). Poniżej przedstawiono wykres wartości tej zmiennej wśród 10 najlepszych obrońców, którzy rozegrali przynajmniej 10 meczy.
+
+```{r, echo=F, out.width="450px"}
+
+temp <- defenders%>%
+  filter(Appearances>=10 & !is.na(Clean.sheets))%>%
+  mutate(Succesful_actions = (Tackles+Blocked.shots+Interceptions+Clearances+Recoveries)/Appearances)%>%
+  top_n(20, Succesful_actions)
   
+ggplot(temp)+
+  geom_col(aes(reorder(Name, Succesful_actions), Succesful_actions, fill=Goals.conceded/Appearances))+
+  theme_minimal()+
+  coord_cartesian(ylim = c(10, 15))+
+  labs(x='Obrońca', y='Liczba skutecznych akcji defensywnych na mecz', title='Liczba skutecznych akcji defensywnych na mecz wśród obrońców')+
+  theme(axis.text.x = element_text(hjust=1, angle=45), axis.line.x = element_blank())+
+  scale_fill_viridis("Liczba straconych bramek na mecz", begin=0.5, end=0)+
+  theme(legend.position = "bottom", axis.title.y = element_text(size=7))
+```
+
+Na powyższym wykresie widzimy, że najwyższą liczbę skutecznych akcji defensywnych na mecz miał Ricardo Pereira. Wartość ta wynosiła prawie 15. Miał on również około 1 bramkę straconą na mecz, co nie jest najgorszym wynikiem. Dla przykładu drugi w naszym zestawieniu jest Jan Bednarek, który zaliczał nieco ponad 14.5 skutecznych akcji na mecz, natomiast miał aż 1.5 bramek straconych na mecz. W następnej części analizy statystyk obrońców będzie skupiona uwaga na ofensywnych aspektach ich gry. 
+
+## Analiza skuteczności obrońców w ofensywie
+
+Rola obrońców w meczu piłki nożnej zmieniła się drastycznie na przestrzeni ostatniego stulecia. W początkowej fazie rozwoju piłki nożnej, byli oni jedynie odpowiedzialni za bronienie dostępu do własnej bramki. Natomiast w nowoczesnym futbolu obrońcy są coraz częściej wykorzystywani w grze ofensywnej i kreowaniu sytuacji pod bramką rywala. Poniżej przedstawiono histogram liczby strzelonych bramek wśród obrońców.
+
+```{r, echo=F}
+ggplot(defenders, aes(Goals))+
+  geom_histogram(binwidth = 1,
+                 fill=viridis(10)[5])+
+  theme_minimal()+
+  stat_bin(geom="text",binwidth=1, aes(label=..count..),
+           vjust=-1.5)+
+  labs(title="Histogram liczby bramek wśród obrońców", 
+       x="Liczba bramek",
+       y="Ilość zawodników") +
+  scale_x_continuous(breaks=c(0, 1, 2, 3, 4, 5),
+                     labels=c(0, 1, 2, 3, 4, 5))+
+  scale_y_continuous(limits=c(0, 105))
+```
+
+Na podstawie powyższego wykresu widzimy, że zdecydowana część obrońców nie zdobyła ani jednej bramki w ciągu sezonu. Tylko 11 obrońców zdobyło więcej niż 2 bramki w przeciągu sezonu. Następnie zostanie przedstawiony wykres ukazujący zależność pomiędzy liczbą podań a liczbą wykreowanych sytuacji i liczbą asyst na mecz wśród obrońców. Dalsza analiza została przeprowadzona dla obrońców, którzy rozegrali przynajmniej 15 meczy w przeciągu całego sezonu.
+
+```{r, echo=F}
+temp <- defenders%>%filter
+
+ggplot(defenders%>%filter(Appearances>=15), aes(Passes/Appearances, Big.chances.created/Appearances))+
+  geom_point(aes(colour=Assists/Appearances), size=8) +
+  geom_smooth(aes(Passes/Appearances, Big.chances.created/Appearances),method = "lm", se = FALSE, colour=viridis(10)[2]) +
+  labs(x='Liczba podań na mecz', y='Liczba wykreowanych sytuacji na mecz', title='Liczba podań a wykreowane sytuacje') +
+  theme_bw()+
+  scale_color_gradientn(name="Liczba asyst na mecz", colours=c(viridis(10)[10], viridis(10)[1]))
+```
+
+Na powyższym wykresie widać pewną dodatnią zależność pomiędzy liczbą podań na mecz a liczbą wykreowanych sytuacji na mecz. Widać też, pozytywną zależność pomiędzy liczbą wykreowanych sytuacji a liczbą asyst na mecz, ponieważ im punkt znajduje się wyżej na osi y, tym ma średnio ciemniejszą barwę. Najskuteczniejsci obrońcy w grze ofensywnej tworzyli średnio około 4 okazje na mecz oraz zaliczali 0.3 asysty na mecz, co jest bardzo dobrym wynikiem jak na obrońców. Następnie zostaną przedstawione dwa wykres radarowy dla wybranych obrońców. Schemat wyliczenia przedstawionych statystyk został przeprowadzony analogicznie do statystyk przy wykresach radarowych bramkarzy.
+
+```{r, echo=FALSE, fig.width=6.5, fig.height=6, out.width='600px'}
+
+temp <- defenders %>%
+  filter(Appearances>=10) %>%
+  mutate(Goals_conceded_per_match = Goals.conceded/Appearances,
+         Passes.per.match = Passes/Appearances,
+         tackles_per_match = Tackles/Appearances,
+         chances = Big.chances.created/Appearances,
+         inter = Interceptions/Appearances,
+         cross = Crosses/Appearances)
+
+normalize <- function(x) {
+  return((x - min(x)) / (max(x) - min(x)))
+}
+
+temp['Goals_conceded_per_match'] <- normalize(temp['Goals_conceded_per_match'])
+temp['tackles_per_match'] <- normalize(temp['tackles_per_match'])
+temp['chances'] <- normalize(temp['chances'])
+temp['Duel.accuracy'] <- normalize(temp['Duel.accuracy'])
+temp['inter'] <- normalize(temp['inter'])
+temp['cross'] <- normalize(temp['cross'])
+
+create_data_def <- function(x){
+temp2 <- temp%>%
+  filter(Name%in%x) %>%
+  select(tackles_per_match, Goals_conceded_per_match, chances, Duel.accuracy, 
+         inter, cross,Name)
+rownames(temp2) <- temp2$Name 
+temp2 <- temp2[, -7]
+temp2 <- rbind(rep(1, 6), rep(0,6), temp2)
+colnames(temp2) <- c("Wślizgi na mecz", "Stracone bramki na mecz", "Stworzone okazje na mecz", "Skuteczność pojedynków",
+                               "Przechwyty na mecz", "Crossy na mecz")
+return(temp2)
+
+}
+
+vvd <- create_data_def(c("Virgil van Dijk", "Jan Bednarek", "Willy Boly"))
+scale_colours=c(viridis(3)[3], viridis(3)[2], magma(3)[2])
+radarchart(vvd, pcol=scale_colours, plwd=3, vlcex=0.7)
+legend(x=1, 
+       y=1.35, 
+       legend = rownames(vvd[-c(1,2),]), 
+       bty = "n", pch=20 , col = scale_colours, cex = 0.7)
+```
+
+Powyższy wykres przedstawia porównanie trzech wybranych obrońców, którzy grają na pozycji stopera. Widzimy, że przebieg wykresów dla każdego z nich jest w miarę podobny. Najwyższą skutecznością pojedynków mógł pochwalić się Virgil Van Dijk. Jeśli chodzi o liczbę przechwytów na mecz, najlepszy wśród tej wybranej trójki obrońców był Jan Bednarek. Natomiast największą liczbę wślizgów na mecz wykonał Willy Boly. Wysoka wartość tej statystyki nie musi być jednak pozytywna. Może ona oznaczać, że obrońca często popełniał błędy w ustawieniu i musiał ratować sytuację wślizgiem. Następnie został przedstawiony wykres powyższych statystyk dla bardziej ofensywnie usposobionych zawodników, czyli bocznych obrońców.
+
+```{r, echo=FALSE, fig.width=6.5, fig.height=6, out.width='600px'}
+taa <- create_data_def(c("Trent Alexander-Arnold", "Ricardo Pereira", "Lucas Digne"))
+scale_colours=c(viridis(3)[3], viridis(3)[2], magma(3)[2])
+radarchart(taa, pcol=scale_colours, plwd=3, vlcex=0.7)
+legend(x=1, 
+       y=1.35, 
+       legend = rownames(taa[-c(1,2),]), 
+       bty = "n", pch=20 , col = scale_colours, cex = 0.7)
+```
+
+Powyższy wykres dostarcza bardzo ciekawych wniosków. Zawodnicy przedstawieni na tym wykresie mają bardzo odmienny przebieg statystyk, pomimo względnie podobnej zajmowanej pozycji na boisku. Przykładowo, Trent Alexander-Arnold deklasuje swoich konkurentów pod względem liczby stworzonych okazji na mecz. Natomiast zajmuje ostatnie miejsce pod względem skuteczności wygranych pojedynków, czy liczby wślizgów na mecz. Ricardo Pereira przewodzi w statystyce liczby wślizgów ne mecz oraz przechwytów ne mecz, lecz przegrywa pod względem liczby stworzonych okazji. 
