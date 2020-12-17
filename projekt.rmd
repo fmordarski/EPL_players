@@ -401,3 +401,42 @@ legend(x=1,
 ```
 
 Powyższy wykres dostarcza bardzo ciekawych wniosków. Zawodnicy przedstawieni na tym wykresie mają bardzo odmienny przebieg statystyk, pomimo względnie podobnej zajmowanej pozycji na boisku. Przykładowo, Trent Alexander-Arnold deklasuje swoich konkurentów pod względem liczby stworzonych okazji na mecz. Natomiast zajmuje ostatnie miejsce pod względem skuteczności wygranych pojedynków, czy liczby wślizgów na mecz. Ricardo Pereira przewodzi w statystyce liczby wślizgów ne mecz oraz przechwytów ne mecz, lecz przegrywa pod względem liczby stworzonych okazji. 
+
+# Analiza statystyk pomocników
+
+Niniejszy rozdział będzie zawierał analizę wizualną statystyk pomocników, występujących w lidze angielskiej w sezonie 2019/2020. Piłkarze grający na tej pozycji powinni być zdecydowanie bardziej wszechstronni niż zawodnicy na innych pozycjach. Zadaniem pomocników jest przerywanie akcji rywali w środku pola, ale również kreowanie sytuacji oraz zdobywanie bramek. W analizowanym zbiorze danych znajduje się 179 pomocników.
+
+## Analiza statystyk defensywnych
+
+W pierwszej kolejności analiza będzie skupiona na statystykach defensywnych pomocników. Tak jak było wspominane we wstępie do rozdziału, trenerzy poszukujący zawodników do swojej drużyny mogą zwracać dużą uwagę na ten aspekt gry. Poniżej przedstawiono wykres, ukazujący zależność pomiędzy liczbą przechwytów na mecz a liczbą wybić piłki na mecz oraz liczby wślizgów na mecz.
+
+```{r, echo=F}
+midfielders <- data %>% filter(Position=='Pomocnik')
+ggplot(midfielders, aes(Clearances/Appearances, Interceptions/Appearances))+
+  geom_point(aes(colour=Tackles/Appearances), size=8) +
+  geom_smooth(aes(Clearances/Appearances, Interceptions/Appearances),method = "lm", se = FALSE, colour=viridis(10)[2]) +
+  labs(x='Liczba wybić piłki na mecz', y='Liczba przechwytów sytuacji na mecz', title='Liczba wybić piłki a liczba przechwytów na mecz') +
+  theme_bw()+
+  scale_color_gradientn(name="Liczba wślizgów na mecz", colours=c(viridis(10)[10], viridis(10)[1]))+
+  theme(legend.position = 'bottom')
+```
+
+Na powyższym wykresie widać silną pozytywną zależność pomiędzy liczbą przechwytów a liczbą wybić piłki na mecz. Można też zauważyć dodatnią zależność pomiędzy liczbą wślizgów a wymienionymi zmiennymi. Oznacza to, że można się spodziewać dużej liczby przechwytów na mecz u zawodnika, który wykonuje relatywnie dużo wślizgów na mecz oraz często wybija piłkę. Na poniższym wykresie przedstawiono dziesięciu najlepszych pomocników pod względem liczby przechwytów na mecz, którzy rozegrali przynajmniej 10 meczy.
+
+```{r, echo=F, out.width="5500px"}
+
+temp <- midfielders%>%
+  filter(Appearances>=10)%>%
+  mutate(Wslizg = ifelse(Tackles/Appearances>=3, 'Więcej bądź równe 3', 'Mniej niż 3' )) %>%
+  top_n(10, Interceptions/Appearances)
+  
+ggplot(temp)+
+  geom_text(aes(Clearances/Appearances, Interceptions/Appearances, label=Name, colour=Wslizg), size=5) +
+  theme_bw() +
+  labs(title = "Pomocnicy z najwyższą liczbą przechwytów na mecz", x='Liczba wybić piłki na mecz', y='Liczba przechwytów sytuacji na mecz') +
+  scale_color_viridis(name='Wślizgi na mecz', discrete=TRUE, begin=0.3, end=0.8)+
+  theme(legend.position = 'bottom')+
+  scale_x_continuous(limits = c(0.2, 4.5))
+```
+
+Wilfred Ndidi był pomocnikiem, który zaliczył najwięcej przechwytów na mecz (średnio około 2.5 raza), wykonując przy tym średnio przynajmniej trzy wślizgi na mecz. Ciekawym przypadkiem jest zawodnik Romain Saiss, który średnio ponad cztery razy w ciągu meczy wybijał piłkę, natomiast przechwytywał piłkę średnio mniej niż 1.7 razy na mecz.
