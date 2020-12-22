@@ -24,8 +24,8 @@ library(fmsb)
 library(scales)
 library(reshape2)
 knitr::opts_chunk$set(fig.align = "center", out.width='350px', warning = F) 
-setwd("C:/Users/Uzytkownik/Documents/Studia/prezentacja i wizualizacja/projekt/EPL_players")
-# setwd("C:/Users/filip-mordarski/priv/EPL_players")
+# setwd("C:/Users/Uzytkownik/Documents/Studia/prezentacja i wizualizacja/projekt/EPL_players")
+setwd("C:/Users/filip-mordarski/priv/EPL_players")
 
 data1 <- read.csv("pl_19-20.csv", encoding = "UTF-8", stringsAsFactors = FALSE,
                   strip.white=TRUE)
@@ -584,3 +584,54 @@ legend(x=1,
 ```
 
 Na pierwszy rzut oka można zauważyć inny przebieg wykresu niż poprzednim razem. Świadczy to o tym, że mamy w tym momencie do czynienia z zawodnikami o innej specyfice gry. Tym razem, zostali poddani analizie zawodnicy bardziej ofensywni. Widać to po statystykach liczby akcji defensywnych oraz skuteczności w powietrzu. Co ciekawe, w tym przypadku we wszystkich kategoriach wygrywa Kevin De Bruyne. Nic dziwnego, że ten zawodnik zdobył statuetkę dla najlepszego piłkarza w sezonie 2019/2020 w lidze angielskiej. 
+
+# Analiza statystyk napastników
+
+W kolejnym rozdziale zostaną poddane analizie statystyki napastnikóW, występujących w sezonie 2019/2020 w lidze angielskiej. Napastnicy od zawsze byli rozliczani ze zdobytych bramek. Umiejętność zdobywania bramek jest najistotniejszym elementem gry zawodników, występujących na tej pozycji. Wraz z rozwojem futbolu napastnicy zaczęli pełnić coraz większą rolę w rozgrywaniu akcji oraz stwarzania okazji swoim partnerom. W pierwszej kolejności zostanie wygenerowany wykres zdobytych bramek wśród napastników.
+
+```{r, include=F, echo=F}
+forwards <- data%>%filter(Position=='Napastnik')
+forwards <- forwards[,colSums(is.na(forwards))<nrow(forwards)]
+```
+```{r, echo=F}
+ggplot(forwards, aes(Goals))+
+  stat_bin(breaks=c(0, 2, 5, 10, 15, 20, 25), fill=viridis(10)[5])+
+  theme_minimal()+
+  stat_bin(breaks=c(0, 2, 5, 10, 15, 20, 25), geom="text",aes(label=..count..),
+           vjust=-1.5)+
+  labs(title="Histogram zdobytych bramek wśród napastników", 
+       x="Bramki",
+       y="Ilość zawodników") +
+  scale_x_continuous(breaks=c(0, 2, 5, 10, 15, 20, 25))+
+  scale_y_continuous(limits=c(0, 50))
+```
+
+Na powyższym wykresie można zauważyć że prawie 80 napastników zdobyło mniej niż 5 bramek w ciągu całego sezonu. Aż ośmiu zawodników zdobyło równo lub więcej niż 15 goli. Jest to bardzo dobry rezultat. Następnie przeanalizujemy jaka była zależność pomiędzy liczbą oddanych strzałów a liczbą zdobytych bramek oraz liczbą wykonanych podań. Wszystkie wartości zostaną podzielone przez liczbę występów aby uzyskać średnie statystyki na jeden mecz.
+
+```{r, echo=FALSE, warning=FALSE}
+ggplot(forwards, aes(Shots/Appearances, Goals/Appearances))+
+  geom_point(aes(colour=Passes/Appearances), size=8) +
+  geom_smooth(aes(Shots/Appearances, Goals/Appearances),method = "lm", se = FALSE, colour=viridis(10)[2]) +
+  labs(x='Liczba strzałów na mecz', y='Liczba bramek na mecz', title='Zdobyte bramki a liczba oddanych strzałów oraz wykonanych podań') +
+  theme_bw()+
+  scale_color_gradientn(name="Liczba podań na mecz", colours=c(viridis(10)[10], viridis(10)[1]))+
+  theme(legend.position = 'bottom')
+```
+
+Tak jak się można było spodziewać, na powyższym wykresie widać pozytywną zależność pomiędzy liczbą strzałów a liczbą zdobytych bramek na mecz. Co ciekawe, widać również podobną zależność pomiędzy liczbą zdobytych goli a liczbą wykonanych podań. Oznacza to, że napastnicy którzy są aktywniejsi w rozgrywaniu akcji oraz kreowaniu sytuacji średnio częściej zdobywają bramki. Kolejno, zostanie przedstawiony wykres napastnikóW, którzy potrzebowali najmniejszej liczby strzałów w zdobyciu bramki. Tacy zawodnicy mogą być bardzo wartościowi dla drużyn, które nie tworzą wielu sytuacji w ciągu meczu. Analizie zostaną poddani napastnicy, którzy rozegrali przynajmniej 10 meczy w ciągu sezonu oraz zdobyli 5 bramek.
+
+```{r, echo=FALSE, warning=FALSE}
+
+temp <- forwards%>%
+        filter(Appearances>=10 & Goals >=5)%>%
+        mutate(accuracy = Shots/Goals) %>%
+        select(Name, accuracy, Passes, Appearances) %>%
+        top_n(-10, accuracy)
+
+ggplot(temp)+
+  geom_col(aes(reorder(Name, accuracy), accuracy, fill=Passes/Appearances))+
+  theme_minimal()+
+  labs(x='Napastnik', y='Liczba oddanych strzałów na jedną bramkę', title='Najskuteczniejsci zawodnicy')+
+  theme(axis.text.x = element_text(hjust=1, angle=45), axis.line.x = element_blank())+
+  scale_fill_viridis("Liczba podań na mecz", begin=0.8, end=0)
+```
