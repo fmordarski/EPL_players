@@ -23,9 +23,11 @@ library(gridExtra)
 library(fmsb)
 library(scales)
 library(reshape2)
-knitr::opts_chunk$set(fig.align = "center", out.width='350px', warning = F) 
-# setwd("C:/Users/Uzytkownik/Documents/Studia/prezentacja i wizualizacja/projekt/EPL_players")
-setwd("C:/Users/filip-mordarski/priv/EPL_players")
+library(papeR)
+library(knitr)
+knitr::opts_chunk$set(fig.align = "center",  warning = F, message = F) 
+setwd("C:/Users/Uzytkownik/Documents/Studia/prezentacja i wizualizacja/projekt/EPL_players")
+# setwd("C:/Users/filip-mordarski/priv/EPL_players")
 
 data1 <- read.csv("pl_19-20.csv", encoding = "UTF-8", stringsAsFactors = FALSE,
                   strip.white=TRUE)
@@ -36,6 +38,15 @@ data[data$Position=='Defender', 'Position'] <- 'Obrońca'
 data[data$Position=='Midfielder', 'Position'] <- 'Pomocnik'
 data[data$Position=='Forward', 'Position'] <- 'Napastnik'
 data$Passes <- as.numeric(sub(",", "", data$Passes, fixed = TRUE))
+
+summary <- data %>% select(Name, Position, Appearances, Goals.conceded, Goals, Shots, Clean.sheets, Saves, Errors.leading.to.goal, Passes, Accurate.long.balls, High.Claims, Tackles, Blocked.shots, Duels.won, Duels.lost, Big.chances.created, Assists, Crosses, Interceptions, Clearances, Aerial.battles.won, Aerial.battles.lost, Headed.goals)
+
+names(summary) <- c("Nazwisko", "Pozycja", "Występy", "Stracone bramki", "Gole", "Strzały", "Czyste konta", "Obronione strzały", "Błędy prowadzące do straty bramki",
+                    "Podania", "Długie piłki", "Złapane wysokie piłki", "Wślizgi", "Zablokowane strzały", "Wygrane pojedynki", "Przegrane pojedynki",
+                    "Stworzone okazje", "Asysty", "Crossy", "Przechwyty", "Wybicia piłki", "Wygrane pojedynki powietrzne", "Przegrane pojedynki powietrzne",
+                    "Gole głową")
+
+summary$Pozycja <- as.factor(summary$Pozycja)
 ```
 # Wstęp
 
@@ -46,6 +57,11 @@ Celem niniejszego raportu jest analiza statystyk zawódników, występujących w
 Poniższy rozdział będzie poświęcony opisowi zbioru danych oraz jego statystykom opisowym. Zbiór danych, wykorzystany do przeprowadzenia analizy pochodzi z następującej strony internetowej: https://www.kaggle.com/krishanthbarkav/english-premier-leagueepl-player-statistics. Został on utworzony na podstawie statystyk zawodników, występujących w najwyższej klasie męskich rozgrywek piłkarskich w Anglii w sezonie 2019/2020 . Zbiór danych zawiera 974 obserwacji oraz 54 zmienne. Jedna obserwacja, odpowiada jednemu zawodnikowi oraz jego statystykom z całego sezonu 2019/2020. Analiza będzie obejmować tylko zawodników, którzy wystąpili przynajmniej raz podczas całego sezonu. Z tego powodu analizowany zbiór danych liczy 474 obserwacji.
 
 Zbiór danych zawiera bardzo dużo zmiennych, aż 54. Przedstawianie statystyk opisowych każdej z nich jest zbędne i nie byłoby wartościowe. Z tego względu zostaną przedstawione jedynie statystyki tych zmiennych, które będą wykorzystane w dalszej analizie.
+
+```{r, echo=F, results='asis'}
+kable(summarize(summary, type = "numeric"))
+kable(summarize(summary, type = "factor"))
+```
 
 # Wstępna analiza statystyk zawodników
 
@@ -126,7 +142,7 @@ xyplot(Goals_conceded_per_match ~ Saves_per_match | Clean_sheets_category, data=
 
 Powyższe wykresy dostarczają bardzo ciekawych wniosków. Mianowicie, bramkarze którzy zachowali czyste konto więcej niż 11 razy wcale nie musieli radzić sobie ze znacznie mniejszą ilością strzałów na mecz. W ich kategorii, widać pozytywną korelację pomiędzy liczbą strzałów na mecz a liczbą straconych goli na mecz. Podobna sytuacja występuje u bramkarzy, którzy zachowali czyste konto mniej niż 5 razy. W tej kategorii, zawodnicy cieszyli się największa niechlubną statystyką liczby straconych bramek na mecz. Dwóch bramkarzy traciło średnio aż 3 bramki na mecz. W kategorii pośredniej, gdzie bramkarzy zachowywali od 5 do 11 czystych kont w ciągu sezonu nie widać korelacji pomiędzy liczbą obronionych strzałów na mecz, a straconymi bramkami na mecz. W ostatniej części tego podrozdziału zostanie wygenerowany wykres, przedstawiający bramkarzy z największym procentem obronionych strzałów. Do analizy zostali włączeni jedynie bramkarze, którzy wystąpili w przynajmniej 10 meczach.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.height=6.5, out.width="550px"}
 temp <- goalkeepers%>%
         filter(Appearances>10)%>%
         mutate(Accuracy = Saves/(Saves+Goals.conceded))%>%
@@ -137,7 +153,8 @@ ggplot(temp)+
   theme_bw() +
   labs(title = "Bramkarze z najwiekszym procentem obronionych strzałów", x='Obronione strzały na mecz', y='Skuteczność obrony strzałów') +
   scale_color_viridis(name='Czyste konta', discrete=TRUE, begin=0.3, end=0.8) +
-  scale_x_continuous(limits = c(1.5, 4.5))
+  scale_x_continuous(limits = c(1.5, 4.5))+
+  theme(legend.position = "bottom")
 
 ```
 
@@ -417,7 +434,7 @@ midfielders <- data %>% filter(Position=='Pomocnik')
 ggplot(midfielders, aes(Clearances/Appearances, Interceptions/Appearances))+
   geom_point(aes(colour=Tackles/Appearances), size=8) +
   geom_smooth(aes(Clearances/Appearances, Interceptions/Appearances),method = "lm", se = FALSE, colour=viridis(10)[2]) +
-  labs(x='Liczba wybić piłki na mecz', y='Liczba przechwytów sytuacji na mecz', title='Liczba wybić piłki a liczba przechwytów na mecz') +
+  labs(x='Liczba wybić piłki na mecz', y='Liczba przechwytów na mecz', title='Liczba wybić piłki a liczba przechwytów na mecz') +
   theme_bw()+
   scale_color_gradientn(name="Liczba wślizgów na mecz", colours=c(viridis(10)[10], viridis(10)[1]))+
   theme(legend.position = 'bottom')
@@ -425,7 +442,7 @@ ggplot(midfielders, aes(Clearances/Appearances, Interceptions/Appearances))+
 
 Na powyższym wykresie widać silną pozytywną zależność pomiędzy liczbą przechwytów a liczbą wybić piłki na mecz. Można też zauważyć dodatnią zależność pomiędzy liczbą wślizgów a wymienionymi zmiennymi. Oznacza to, że można się spodziewać dużej liczby przechwytów na mecz u zawodnika, który wykonuje relatywnie dużo wślizgów na mecz oraz często wybija piłkę. Na poniższym wykresie przedstawiono dziesięciu najlepszych pomocników pod względem liczby przechwytów na mecz, którzy rozegrali przynajmniej 10 meczy.
 
-```{r, echo=F, out.width="5500px"}
+```{r, echo=F, fig.height=6.5, out.width="550px"}
 
 temp <- midfielders%>%
   filter(Appearances>=10)%>%
@@ -635,3 +652,107 @@ ggplot(temp)+
   theme(axis.text.x = element_text(hjust=1, angle=45), axis.line.x = element_blank())+
   scale_fill_viridis("Liczba podań na mecz", begin=0.8, end=0)
 ```
+
+Widzimy, że najskuteczniesi zawodnicy potrzebowali średnio mniej niż 4 strzały aby zdobyć bramkę. Njalepsi w tym aspekcie byli Jamie Vardy oraz Mason Greenwood. Co ciekawe, wykonywali oni relatywnie mało podań na mecz w okolicy 15 - 20. Może to oznaczać, że grali oni w zespołach, które nie prowadziły gry i nie kreowały wielu sytuacji w ciągu meczu. Następnie zostanie przedstawiona zależność pomiędzy liczbą podań a liczbą wykreowanych sytuacji oraz liczbą asyst na mecz wśród 10 najlepszych napastników pod względem liczby asyst. 
+
+```{r, echo=FALSE, warning=FALSE, out.width='650px', fig.height=8}
+
+temp <- forwards%>%
+        filter(Appearances>=10)%>%
+        top_n(10, Assists)
+
+ggplot(temp)+
+  geom_text(aes(Passes/Appearances, Big.chances.created/Appearances, label=Name, colour=Assists/Appearances), size=4.5) +
+  theme_bw() +
+  labs(title = "Najlepsi asystenci wśród napastników", x='Liczba podań na mecz', y='Liczba wykreowanych sytuacji na mecz') +
+  scale_color_viridis(name='Asysty na mecz', begin=0.8, end=0.3)+
+  theme(legend.position = 'bottom')+
+  scale_x_continuous(limits = c(15, 42))
+```
+
+Na pierwszy rzut oka widać pozytywną zależność pomiędzy liczbą podań na mecz a liczbą wykreowanych sytuacji na mecz. Na wykresie można zauważyć również zależność pomiędzy liczbą wykreowanych sytuacji na mecz a liczbą asyst na mecz wśród napastników. Im wyżej na wykresie znajduje się etykieta z danym nazwiskiem piłkarza tym ciemniejsza jest barwa czcionki. Następnie został utworzony wykres, przedstawiający najlepszych napastników pod względem klasyfikacji kanadyjskiej (liczba bramek + liczba asyst).
+
+```{r, echo=F, warning=F, out.width='650px'}
+temp <- forwards%>%
+  top_n(20, Goals+Assists)%>%
+  select(Name, Goals, Assists) %>%
+  arrange(Goals+Assists) %>%
+  mutate(Name = factor(Name, levels = unique(Name)))
+
+temp <- melt(temp, id.vars="Name")
+
+ggplot(temp, aes(Name, value, group=variable))+
+  geom_col(aes(fill=variable)) +
+  scale_fill_viridis_d("Statystyka", labels=c("Gole", "Asysty"),begin=0.5, end=1) +
+  geom_text(aes(label = value), position = position_stack(vjust = 0.5)) +
+  theme_minimal()+
+  labs(x='Napastnik', y='Liczba bramek lub asyst', title='Najlepsi napastnicy w akcjach ofensywnych')+
+  theme(axis.text.x = element_text(hjust=1, angle=45), axis.line.x = element_blank())+
+  theme(legend.position = 'bottom')
+```
+
+Najlepszym napastnikiem w klasyfikacji kanadyjskiej w sezonie 2019/2020 w lidze angielskiej był Mohamed Salah. Zdobył on 29 punktów w tej klasyfikacji, z czego 19 stanowiły bramki a 10 asysty. Na drugim miejscu uplasował się Jamie Vardy, który z 23 bramkami został najlepszym strzelcem w tym sezonie. Kolejno, zostały przedstawione dwa wykresy radarowe wybranych napastników.
+
+```{r, echo=FALSE, fig.width=6.5, fig.height=6, out.width='600px'}
+
+temp <- forwards %>%
+  filter(Appearances>=10) %>%
+  mutate(Goals_per_match = Goals/Appearances,
+         Passes.per.match = Passes/Appearances,
+         shots_per_match = Shots/Appearances,
+         chances = Big.chances.created/Appearances,
+         assists = Assists/Appearances,
+         head = Headed.goals/Appearances)
+
+normalize <- function(x) {
+  return((x - min(x)) / (max(x) - min(x)))
+}
+
+temp['Goals_per_match'] <- normalize(temp['Goals_per_match'])
+temp['Passes.per.match'] <- normalize(temp['Passes.per.match'])
+temp['shots_per_match'] <- normalize(temp['shots_per_match'])
+temp['chances'] <- normalize(temp['chances'])
+temp['assists'] <- normalize(temp['assists'])
+temp['head'] <- normalize(temp['head'])
+
+create_data_for <- function(x){
+temp2 <- temp%>%
+  filter(Name%in%x) %>%
+  select(Goals_per_match, Passes.per.match, shots_per_match, chances, 
+         assists, head,Name)
+rownames(temp2) <- temp2$Name 
+temp2 <- temp2[, -7]
+temp2 <- rbind(rep(1, 6), rep(0,6), temp2)
+colnames(temp2) <- c("Gole na mecz", "Podania na mecz", "Strzały na mecz", "Stworzone okazje na mecz",
+                               "Asysty na mecz", "Gole głową na mecz")
+return(temp2)
+
+}
+
+mst <- create_data_for(c("Mohamed Salah", "Son Heung-Min", "Tammy Abraham"))
+scale_colours=c(viridis(3)[3], viridis(3)[2], magma(3)[2])
+radarchart(mst, pcol=scale_colours, plwd=3, vlcex=0.7)
+legend(x=1, 
+       y=1.35, 
+       legend = rownames(mst[-c(1,2),]), 
+       bty = "n", pch=20 , col = scale_colours, cex = 0.7)
+```
+
+Na powyższym wykresie najlepiej prezentowały się statystyki Mohameda Salaha. Przewodził on w następujących kategoriach: liczba strzałów na mecz, liczba podań na mecz, czy liczba bramek na mecz. Najgorzej z wybranej trójki prezentował się Tammy Abraham, który przewodził jedynie w statystyce liczby zdobytych bramek głową na mecz. Następnie został wygenerowany wykres radarowy z trójką innych napastników.
+
+```{r, echo=FALSE, fig.width=6.5, fig.height=6, out.width='600px'}
+
+vgf <- create_data_for(c("Jamie Vardy", "Mason Greenwood", "Roberto Firmino"))
+scale_colours=c(viridis(3)[3], viridis(3)[2], magma(3)[2])
+radarchart(vgf, pcol=scale_colours, plwd=3, vlcex=0.7)
+legend(x=1, 
+       y=1.35, 
+       legend = rownames(vgf[-c(1,2),]), 
+       bty = "n", pch=20 , col = scale_colours, cex = 0.7)
+```
+
+Widać zdecydowaną różnicą w stylu gry przedstawionych powyżej napastników. Jamie Vardy był najlepszy pod względem liczby strzelonych bramek, liczby zdobytych goli głową oraz stworzonych okazji. Natomiast Roberto Firmino wyróżniał się na tle pozostałej dwójki w liczbie podań na mecz oraz asyst. Mason Greenwoow nie przewodził natomiast w żadnej z przedstawionych statystyk.
+
+# Zakończenie
+
+Powyższy raport zawiera obszerną analizę statystyk piłkarzy występujących w sezonie 2019/2020 w lidze angielskiej. Z pewnością analiza ta może być bardzo wartościowa dla trenerów oraz skautów planujących zmianę kadry zawodników w następnych sezonach. Umożliwi im to wybranie zawodników, którzy pasują do preferowanej przez nich taktyki oraz sposobu gry.
