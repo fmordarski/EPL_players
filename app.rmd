@@ -1,5 +1,5 @@
 ---
-title: "MyTime Dashboard"
+title: "Analiza statystyk piłkarzy Premier League"
 output: 
   flexdashboard::flex_dashboard:
     source: embed
@@ -38,142 +38,161 @@ normalize <- function(x) {
 }
 
 
-radar <- function(data, var1, var2, var3, var4, var5, var6, name1, name2, name3){
-data[var1] <- normalize(data[var1])
-data[var2] <- normalize(data[var2])
-data[var3] <- normalize(data[var3])
-data[var4] <- normalize(data[var4])
-data[var5] <- normalize(data[var5])
-data[var6] <- normalize(data[var6])
+radar <- function(data, var, names){
 
-data2 <- data%>%
-  filter(Name%in%c(name1, name2, name3)) %>%
-  select((!!as.symbol(var1)), (!!as.symbol(var2)), (!!as.symbol(var3)), (!!as.symbol(var4)), 
-         (!!as.symbol(var5)), (!!as.symbol(var6)), Name)
-rownames(data2) <- data2$Name 
-data2 <- data2[, -7]
-data2 <- rbind(rep(1, 6), rep(0,6), data2)
+temp <- data[append(var, 'Name')]
 
-scale_colours=c(viridis(3)[3], viridis(3)[2], magma(3)[2])
-radarchart(data2, pcol=scale_colours, plwd=3, vlcex=0.7)
-legend(x=1, 
-       y=1.35, 
-       legend = rownames(data2[-c(1,2),]), 
-       bty = "n", pch=20 , col = scale_colours, cex = 0.7)
+temp <- temp[complete.cases(temp), ]
+
+
+for (i in 1:length(var)){
+  temp[var[i]] <- normalize(temp[var[i]])
 }
+
+
+data2 <- temp%>%
+  filter(Name%in%names)
+
+rownames(data2) <- data2$Name 
+data2 <- data2 %>%
+  select(-Name)
+data2 <- rbind(rep(1, length(var)), rep(0,length(var)), data2)
+
+scale_colours=c(rainbow(length(names)))
+radarchart(data2, pcol=scale_colours, plwd=5, vlcex=2)
+legend(x=1.7, 
+       y=1, 
+       legend = rownames(data2[-c(1,2),]), 
+       bty = "n", pch=20 , col = scale_colours, cex = 2)
+}
+
+best_players <- function(data, position, var){
+temp <- data%>%
+        filter(Position==position)%>%
+        top_n(10, (!!as.symbol(var)))
+
+ggplot(temp)+
+  geom_col(aes(reorder(Name, (!!as.symbol(var))), (!!as.symbol(var))), fill=viridis(10)[5])+
+  theme_minimal()+
+  labs(x='Zawodnik', y='Statystyka', title='Najlepsi zawodnicy na danej pozycji według danej statystyki')+
+  theme(axis.text.x = element_text(hjust=1, angle=45), axis.line.x = element_blank())
+         
+}
+
+y_x <- function(data, position, var1, var2, var3){
+temp <- data%>%
+        filter(Position==position)
+
+ggplot(temp, aes((!!as.symbol(var2)), (!!as.symbol(var1))))+
+  geom_point(aes(colour=(!!as.symbol(var3))), size=8) +
+  geom_smooth(aes((!!as.symbol(var2)), (!!as.symbol(var1))),method = "lm", se = FALSE, colour=viridis(10)[2])  +
+  theme_bw()+
+  scale_color_gradientn(colours=c(viridis(10)[10], viridis(10)[1]))+
+  theme(legend.position = 'bottom')
+         
+}
+
+players_name <- function(data, position, var1, var2, var3){
+
+temp <- data%>%
+        filter(Position==position)%>%
+        top_n(10, (!!as.symbol(var1)))
+
+
+
+ggplot(temp)+
+  geom_text(aes((!!as.symbol(var2)), (!!as.symbol(var1)), label=Name, colour=(!!as.symbol(var3))), size=4.5) +
+  theme_bw()  +
+  scale_color_viridis(begin=0.8, end=0.3)+
+  theme(legend.position = 'bottom')+
+  xlim(min(temp[var2])*0.85 , max(temp[var2])*1.15)
+}
+
 ```
+Podsumowanie
+===================================== 
 
+Inputs {.sidebar}
+-------------------------------------
 
-Selections {.sidebar}
-===============================
-
-Select the variables to display
+Wybierz zmienne do wyświetlenia
 
 ```{r}
 
-selectInput("name1",
-                   label = "Choose a survey to display",
-                   choices = unique(data$Name),
-                   multiple = TRUE)
-selectInput("name2",
-                   label = "Choose a team to display",
-                   choices = unique(data$Name),
-                   multiple = TRUE)
-selectInput("name3",
-                 label = "Choose a WFM to display",
-                 choices = unique(data$Name),
-               multiple = TRUE)
-selectInput("var1",
-               label = "Choose a month to display",
-               choices = names(data),
-               multiple = TRUE)
-selectInput("var2",
-               label = "Choose a task to display",
-               choices = names(data),
-               multiple = TRUE)
-selectInput("var3",
-               label = "Level to display (SharedWork)",
-               choices = names(data),
-               multiple = TRUE)
-selectInput("var4",
-               label = "Level to display (SharedWork)",
-               choices = names(data),
-               multiple = TRUE)
-selectInput("var5",
-               label = "Level to display (SharedWork)",
-               choices = names(data),
-               multiple = TRUE)
-selectInput("var6",
-               label = "Level to display (SharedWork)",
-               choices = names(data),
-               multiple = TRUE)
-# observe({
-#    team <- input$team
-#    wfm <- input$wfm
-#    survey <- input$survey
-#    if(length(team)>0 & length(wfm)>0 & length(survey)>0){
-#    }
-#    else if(length(team)>0 & length(wfm)>0 & length(survey)==0){
-#    cho1 <- Quests_month %>% filter(Survey.Team %in% team & Survey.WFM %in% wfm) %>% pull(Survey.Abb)
-#    updateSelectInput(session, "survey",
-#          choices = cho1
-#        )
-#    }
-#    else if(length(team)>0 & length(wfm)==0 & length(survey)==0){
-#     cho1 <- Quests_month %>% filter(Survey.Team %in% team) %>% pull(Survey.Abb)
-#     cho2 <- Quests_month %>% filter(Survey.Team %in% team) %>% pull(Survey.WFM)
-#     updateSelectInput(session, "survey",
-#          choices = cho1
-#        )
-#     updateSelectInput(session, "wfm",
-#          choices = cho2
-#        )
-#    }
-#    else if(length(team)==0 & length(wfm)==0 & length(survey)>0){
-#     cho1 <- Quests_month %>% filter(Survey.Abb %in% survey) %>% pull(Survey.WFM)
-#     cho2 <- Quests_month %>% filter(Survey.Abb %in% survey) %>% pull(Survey.Team)
-#     updateSelectInput(session, "wfm",
-#          choices = cho1
-#        )
-#     updateSelectInput(session, "team",
-#          choices = cho2
-#        )
-#    }
-#    else if(length(team)==0 & length(wfm)>0 & length(survey)==0){
-#     cho1 <- Quests_month %>% filter(Survey.WFM %in% wfm) %>% pull(Survey.Team)
-#     cho2 <- Quests_month %>% filter(Survey.WFM %in% wfm) %>% pull(Survey.Abb)
-#     updateSelectInput(session, "team",
-#          choices = cho1
-#        )
-#     updateSelectInput(session, "survey",
-#          choices = cho2
-#        )
-#    }
-#    else if(is.null(team) & is.null(wfm) & is.null(survey)){
-#    updateSelectInput(session, "survey",
-#          choices = Quests_month %>% pull(Survey.Abb) %>% unique()
-#        )
-#    updateSelectInput(session, "wfm",
-#          choices = Quests_month %>% pull(Survey.WFM) %>% unique()
-#        )
-#    updateSelectInput(session, "team",
-#          choices = Quests_month %>% pull(Survey.Team) %>% unique()
-#        )
-#    }
-#    })
+selectInput("position",
+                   label = "Wybierz pozycję",
+                   choices = unique(data$Position),
+                    selected = 'Napastnik')
+selectInput("y",
+               label = "Wybierz zmienną objaśnianą",
+               choices = names(data), selected = 'Goals')
+selectInput("x",
+               label = "Wybierz zmienną objaśniającą",
+               choices = names(data), selected = 'Passes')
+selectInput("fill",
+               label = "Wybierz zmienną do wypełnienia",
+               choices = names(data), selected = 'Assists')
 
 ```
 
-Surveys - plots
+Column
+-------------------------------------
+
+### Najlepsi zawodnicy
+
+```{r}
+suppressWarnings(renderPlotly({
+     best_players(data, input$position, input$y)
+   }))
+```
+
+Column {.tabset}
+-------------------------------------
+
+### Zależność statystyki y od x
+
+```{r}
+suppressWarnings(renderPlotly({
+     y_x(data, input$position, input$y, input$x, input$fill)
+   }))
+```
+
+### Zależność statystyki y od x wśród najlepszych
+
+```{r}
+suppressWarnings(renderPlotly({
+     players_name(data, input$position, input$y, input$x, input$fill)
+   }))
+```
+
+Wykresy radarowe
 ===================================== 
+
+Inputs {.sidebar}
+-------------------------------------
+
+Wybierz zmienne do wyświetlenia
+
+```{r}
+
+selectInput("names",
+                   label = "Wybierz piłkarzy",
+                   choices = unique(data$Name),
+                   multiple = TRUE, selected = c('Jamie Vardy', 'Mohamed Salah'))
+selectInput("var",
+               label = "Wybierz statystyki",
+               choices = names(data),
+               multiple = TRUE, selected = c('Shots', 'Goals', 'Assists', 'Passes'))
+
+```
 
 Column 
 -------------------------------------
 
 ```{r}
 suppressWarnings(renderPlot({
-     radar(data, input$var1, input$var2, input$var3, input$var4, input$var5, input$var6, input$name1, input$name2, input$name3)
-   }))
+     radar(data, input$var, input$names)
+   }, height = 1000))
 ```
 
 <!-- ### Top 30 surveys -->
