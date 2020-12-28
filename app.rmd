@@ -66,10 +66,10 @@ legend(x=1.7,
        bty = "n", pch=20 , col = scale_colours, cex = 2)
 }
 
-best_players <- function(data, position, var){
+best_players <- function(data, position, var, num){
 temp <- data%>%
         filter(Position==position)%>%
-        top_n(10, (!!as.symbol(var)))
+        top_n(num, (!!as.symbol(var)))
 
 ggplot(temp)+
   geom_col(aes(reorder(Name, (!!as.symbol(var))), (!!as.symbol(var))), fill=viridis(10)[5])+
@@ -92,11 +92,11 @@ ggplot(temp, aes((!!as.symbol(var2)), (!!as.symbol(var1))))+
          
 }
 
-players_name <- function(data, position, var1, var2, var3){
+players_name <- function(data, position, var1, var2, var3, num){
 
 temp <- data%>%
         filter(Position==position)%>%
-        top_n(10, (!!as.symbol(var1)))
+        top_n(num, (!!as.symbol(var1)))
 
 
 
@@ -132,6 +132,9 @@ selectInput("x",
 selectInput("fill",
                label = "Wybierz zmienną do wypełnienia",
                choices = names(data), selected = 'Assists')
+sliderInput("number_of_players",
+                label= "Wybierz liczbę piłkarzy do wyświetlenia",
+                min = 3, max = 30, value = 10)
 
 ```
 
@@ -142,7 +145,7 @@ Column
 
 ```{r}
 suppressWarnings(renderPlotly({
-     best_players(data, input$position, input$y)
+     best_players(data, input$position, input$y, input$number_of_players)
    }))
 ```
 
@@ -161,7 +164,7 @@ suppressWarnings(renderPlotly({
 
 ```{r}
 suppressWarnings(renderPlotly({
-     players_name(data, input$position, input$y, input$x, input$fill)
+     players_name(data, input$position, input$y, input$x, input$fill, input$number_of_players)
    }))
 ```
 
