@@ -1,6 +1,6 @@
 ---
 title: "Raport dotyczący statystyk piłkarzy ligi angielskiej"
-author: "Filip Mordarski"
+author: "Filip Mordarski 76671"
 date: "2 12 2020"
 header-includes:
   - \usepackage[polish]{babel}
@@ -26,8 +26,8 @@ library(reshape2)
 library(papeR)
 library(knitr)
 knitr::opts_chunk$set(fig.align = "center",  warning = F, message = F) 
-setwd("C:/Users/Uzytkownik/Documents/Studia/prezentacja i wizualizacja/projekt/EPL_players")
-# setwd("C:/Users/filip-mordarski/priv/EPL_players")
+# setwd("C:/Users/Uzytkownik/Documents/Studia/prezentacja i wizualizacja/projekt/EPL_players")
+setwd("C:/Users/filip-mordarski/priv/EPL_players")
 
 data1 <- read.csv("pl_19-20.csv", encoding = "UTF-8", stringsAsFactors = FALSE,
                   strip.white=TRUE)
@@ -48,18 +48,23 @@ names(summary) <- c("Nazwisko", "Pozycja", "Występy", "Stracone bramki", "Gole"
 
 summary$Pozycja <- as.factor(summary$Pozycja)
 ```
+\newpage
 # Wstęp
 
-Celem niniejszego raportu jest analiza statystyk zawódników, występujących w najwyższej klasie męskich rozgrywek piłkarskich w Anglii w sezonie 2019/2020. Może on okazać się bardzo wartościowy dla trenerów, którym pomoże w poprawianiu jakości gry swojego zespołu. Taki raport z pewnością okaże się korzystny podczas budowania kadry pierwszego zespołu na kolejny sezon. Umożliwi wyszukanie zawodników o charakterystyce pasującej do gry danego zespołu.
+Celem niniejszego raportu jest analiza statystyk zawodników, występujących w najwyższej klasie męskich rozgrywek piłkarskich w Anglii w sezonie 2019/2020. Może on okazać się bardzo wartościowy dla trenerów, którym pomoże w poprawianiu jakości gry swojego zespołu. Taki raport z pewnością okaże się korzystny podczas budowania kadry pierwszego zespołu na kolejny sezon. Umożliwi wyszukanie zawodników o charakterystyce pasującej do gry danego zespołu.
 
 # Opis zbioru danych
 
-Poniższy rozdział będzie poświęcony opisowi zbioru danych oraz jego statystykom opisowym. Zbiór danych, wykorzystany do przeprowadzenia analizy pochodzi z następującej strony internetowej: https://www.kaggle.com/krishanthbarkav/english-premier-leagueepl-player-statistics. Został on utworzony na podstawie statystyk zawodników, występujących w najwyższej klasie męskich rozgrywek piłkarskich w Anglii w sezonie 2019/2020 . Zbiór danych zawiera 974 obserwacji oraz 54 zmienne. Jedna obserwacja, odpowiada jednemu zawodnikowi oraz jego statystykom z całego sezonu 2019/2020. Analiza będzie obejmować tylko zawodników, którzy wystąpili przynajmniej raz podczas całego sezonu. Z tego powodu analizowany zbiór danych liczy 474 obserwacji.
+Poniższy rozdział będzie poświęcony opisowi zbioru danych oraz jego statystykom opisowym. Zbiór danych, wykorzystany do przeprowadzenia analizy pochodzi z następującej strony internetowej: https://www.kaggle.com/krishanthbarkav/english-premier-leagueepl-player-statistics. Został on utworzony na podstawie statystyk zawodników, występujących w najwyższej klasie męskich rozgrywek piłkarskich w Anglii w sezonie 2019/2020. Zbiór danych zawiera 974 obserwacji oraz 54 zmienne. Jedna obserwacja, odpowiada jednemu zawodnikowi oraz jego statystykom z całego sezonu 2019/2020. Analiza będzie obejmować tylko zawodników, którzy wystąpili przynajmniej raz podczas całego sezonu. Z tego powodu analizowany zbiór danych liczy 474 obserwacji. 
 
 Zbiór danych zawiera bardzo dużo zmiennych, aż 54. Przedstawianie statystyk opisowych każdej z nich jest zbędne i nie byłoby wartościowe. Z tego względu zostaną przedstawione jedynie statystyki tych zmiennych, które będą wykorzystane w dalszej analizie.
 
 ```{r, echo=F, results='asis'}
 kable(summarize(summary, type = "numeric"))
+```
+
+\newpage
+```{r, echo=F, results='asis'}
 kable(summarize(summary, type = "factor"))
 ```
 
@@ -189,7 +194,7 @@ ggplot(temp)+
   theme(axis.text.x = element_text(hjust=1, angle=45), axis.line.x = element_blank())
 ```
 
-Widzimy na powyższym wykresie że trzech bramkarzy ma ponad 8 celnych długich podań na mecz. Możemy się spodziewać, że są to bramkarze drużyn, które lubią grać z kontrataku i szybko przenosić piłkę na połowę rywali. Czterech bramkarzy z najniższą liczbą długich podań na mecz, fani piłki nożnej mogą kojarzyć z drużyn grających krótkimi podaniami i wyprowadzającymi piłkę spod własnej bramki. Na koniec analizy bramkarzy zostaną przedstawione cztery wykresy radarowe dla wybranych bramkarzy.
+Widzimy na powyższym wykresie że trzech bramkarzy ma ponad 8 celnych długich podań na mecz. Możemy się spodziewać, że są to bramkarze drużyn, które lubią grać z kontrataku i szybko przenosić piłkę na połowę rywali. Czterech bramkarzy z najniższą liczbą długich podań na mecz, fani piłki nożnej mogą kojarzyć z drużyn grających krótkimi podaniami i wyprowadzającymi piłkę spod własnej bramki. Na koniec analizy bramkarzy zostaną przedstawione dwa wykresy radarowe dla wybranych bramkarzy.
 ```{r, echo=FALSE, fig.width=6.5, fig.height=6, out.width='600px'}
 
 temp <- goalkeepers %>%
@@ -250,7 +255,7 @@ W tym rozdziale zostanie przeprowadzona analiza statystyk piłkarzy, występują
 
 ## Analiza defensywnych statystyk obrońców
 
-Poniższy podrozdział będzie zawierał analizę defensywnych statystyk obrońcóW, takich jak liczba czystych kont, liczba pojedynków oraz ich skuteczność, czy liczba przechwytóW. W bazie znajduje się 161 obrońców. Poniżej zaprezentowano histogram procentu liczby czystych kont w sezonie wśród obrońców.
+Poniższy podrozdział będzie zawierał analizę defensywnych statystyk obrońców, takich jak liczba czystych kont, liczba pojedynków oraz ich skuteczność, czy liczba przechwytów. W bazie znajduje się 161 obrońców. Poniżej zaprezentowano histogram procentu liczby czystych kont w sezonie wśród obrońców.
 
 ```{r, include=F, echo=F}
 defenders <- data%>%filter(Position=='Obrońca')
@@ -413,7 +418,7 @@ Powyższy wykres przedstawia porównanie trzech wybranych obrońców, którzy gr
 taa <- create_data_def(c("Trent Alexander-Arnold", "Ricardo Pereira", "Lucas Digne"))
 scale_colours=c(viridis(3)[3], viridis(3)[2], magma(3)[2])
 radarchart(taa, pcol=scale_colours, plwd=3, vlcex=0.7)
-legend(x=1, 
+legend(x=0.7, 
        y=1.35, 
        legend = rownames(taa[-c(1,2),]), 
        bty = "n", pch=20 , col = scale_colours, cex = 0.7)

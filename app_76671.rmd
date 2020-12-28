@@ -20,7 +20,8 @@ library(fmsb)
 ```
 
 ```{r global, include=FALSE, warning=FALSE}
-setwd("C:/Users/Uzytkownik/Documents/Studia/prezentacja i wizualizacja/projekt/EPL_players")
+# setwd("C:/Users/Uzytkownik/Documents/Studia/prezentacja i wizualizacja/projekt/EPL_players")
+setwd("C:/Users/filip-mordarski/priv/EPL_players")
 data1 <- read.csv("pl_19-20.csv", encoding = "UTF-8", stringsAsFactors = FALSE,
                   strip.white=TRUE)
 data1$Name <- substr(data1$Name, 1, length(data1$Name)-1)
@@ -138,14 +139,22 @@ sliderInput("number_of_players",
 
 ```
 
-Column
+Column {.tabset}
 -------------------------------------
 
-### Najlepsi zawodnicy
+### Najlepsi zawodnicy według statystyki y
 
 ```{r}
 suppressWarnings(renderPlotly({
      best_players(data, input$position, input$y, input$number_of_players)
+   }))
+```
+
+### Najlepsi zawodnicy według statystyki x
+
+```{r}
+suppressWarnings(renderPlotly({
+     best_players(data, input$position, input$x, input$number_of_players)
    }))
 ```
 
